@@ -1,0 +1,47 @@
+services:
+  openvpn-client:
+    image: ghcr.io/wfg/openvpn-client
+    container_name: openvpn-client
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    volumes:
+      - ./volumes/openvpn:/data/vpn
+    restart: unless-stopped
+    ports:
+      - 8112:8112
+      - 6881:6881
+      - 6881:6881/udp
+  jellyfin: 
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Montreal
+    volumes:
+      - ./volumes/jellyfin/config:/config
+      - ./volumes/jellyfin/movies:/movies
+      - ./volumes/jellyfin/tv:/tv
+    ports:
+      - 8096:8096
+      - 8920:8920 #optional
+      - 7359:7359/udp #optional
+      - 1900:1900/udp #optional
+    restart: unless-stopped
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: deluge
+    network_mode: service:openvpn-client
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Montreal
+      - DELUGE_LOGLEVEL=error #optional
+    volumes:
+      - ./volumes/deluge/config:/config
+      - ./volumes/deluge/downloading:/downloading
+      - ./volumes/jellyfin/movies:/movies
+      - ./volumes/jellyfin/tv:/tv
+    restart: unless-stopped
